@@ -1,0 +1,263 @@
+/* -----------------------------------DDL------------------------------------------ */
+CREATE DATABASE [IT7x29_Assignment_1]
+GO
+
+Use [IT7x29_Assignment_1]
+GO
+
+-- Creating tables
+CREATE TABLE dbo.Employee(
+  Emp_Num INT NOT NULL
+    CONSTRAINT PK_Employee
+		PRIMARY KEY,
+  CONSTRAINT U1_Emp_Num_Emp_Type
+	UNIQUE (Emp_Num, Emp_Type),
+  Emp_Type varchar(10) NOT NULL
+	CONSTRAINT CK_Employee_Emp_Type
+		CHECK (Emp_Type IN ('Agent', 'Inspector')),
+  Emp_Name varchar(50) NOT NULL,
+  Emp_Address varchar(100) NOT NULL,
+  Emp_StartDate datetime NOT NULL
+)
+GO
+
+CREATE TABLE dbo.Agent(
+  Emp_Num INT NOT NULL
+    CONSTRAINT PK_Agent
+	PRIMARY KEY
+	CONSTRAINT FK1_Agent_Employee
+	FOREIGN KEY REFERENCES dbo.Employee(Emp_Num),
+  CONSTRAINT U1_Emp_Num_Ag_Cert
+	UNIQUE (Emp_Num, Ag_Cert),
+  Emp_Type varchar(10) NOT NULL
+	CONSTRAINT CK_Agent_Emp_Type
+	CHECK (Emp_Type IN ('Agent')),
+  CONSTRAINT FK2_Agent_Employee
+  FOREIGN KEY (Emp_Num, Emp_Type)
+  REFERENCES dbo.Employee(Emp_Num, Emp_Type),
+  Ag_Cert varchar(10) NOT NULL
+    CONSTRAINT CK_Agent_Ag_Cert
+    CHECK (Ag_Cert IN ('Commercial', 'Residential')),
+  Ag_Affiliation varchar(25) NOT NULL
+)
+GO
+
+CREATE TABLE dbo.Inspector(
+  Emp_Num INT NOT NULL
+    CONSTRAINT PK_Inspector
+    PRIMARY KEY
+	CONSTRAINT FK1_Inspector_Employee
+	FOREIGN KEY REFERENCES dbo.Employee(Emp_Num),
+  CONSTRAINT U1_Emp_Num_Inspector_Cert
+	UNIQUE (Emp_Num, Inspector_Cert),
+  Emp_Type varchar(10) NOT NULL
+	CONSTRAINT CK_Inspector_Emp_Type
+	CHECK (Emp_Type IN ('Agent')),
+  CONSTRAINT FK2_Inspector_Employee
+  FOREIGN KEY (Emp_Num, Emp_Type)
+  REFERENCES dbo.Employee(Emp_Num, Emp_Type),
+  Inspector_Cert varchar(10) NOT NULL
+  CONSTRAINT CK_Inspector_Insp_Cert
+    CHECK (Inspector_Cert IN ('IPENZ', 'NZIBI')),
+  Inspector_MembNumber int NOT NULL
+)
+GO
+
+CREATE TABLE dbo.Property(
+  Property_ID INT NOT NULL
+    CONSTRAINT PK_Property
+    PRIMARY KEY,
+  CONSTRAINT U1_Property_ID_Property_Type
+	UNIQUE (Property_ID, Property_Type),
+  Property_Type varchar(15) NOT NULL
+    CONSTRAINT CK_Property_Property_Type
+    CHECK (Property_Type IN ('Commercial', 'Residential')),
+  Property_VenName varchar(100) NOT NULL, 
+  Property_Address varchar(100) NOT NULL,
+  Property_Price money NOT NULL
+	CONSTRAINT CK_Property_Property_Price
+    CHECK (Property_Price > 50000),
+  Property_Age int NOT NULL
+	CONSTRAINT CK_Property_Property_Age
+    CHECK (Property_Age < 120),
+  Property_Condition varchar(15) NOT NULL
+	CONSTRAINT CK_Property_Property_Condition
+    CHECK (Property_Condition IN ('Excellent', 'Good', 'Poor', 'Munted')),
+  Property_FloorSize varchar(10) NOT NULL,
+)
+GO
+
+CREATE TABLE dbo.Residential(
+  Property_ID INT NOT NULL
+    CONSTRAINT PK_Residential
+    PRIMARY KEY
+	CONSTRAINT FK1_Residential_Property
+	FOREIGN KEY REFERENCES dbo.Property(Property_ID),
+  Property_Type varchar(15) NOT NULL
+	CONSTRAINT FK2_Residential_Property
+	FOREIGN KEY (Property_ID, Property_Type)
+	REFERENCES dbo.Property(Property_ID, Property_Type),
+  CONSTRAINT CK_Property_Property_Type
+    CHECK (Property_Type IN ('Commercial', 'Residential')),
+  Residential_Bedrooms int NOT NULL,
+  Residential_Bathrooms int NOT NULL
+)
+GO
+
+CREATE TABLE dbo.Commercial(
+  Property_ID INT NOT NULL
+    CONSTRAINT PK_Commercial
+    PRIMARY KEY
+	CONSTRAINT Property_Commercial_FK1
+	FOREIGN KEY REFERENCES dbo.Property(Property_ID),
+  Property_Type varchar(15) NOT NULL
+	CONSTRAINT Property_Commercial_FK2
+	FOREIGN KEY (Property_ID, Property_Type)
+	REFERENCES dbo.Property(Property_ID, Property_Type),
+  CONSTRAINT CK_Property_Property_Type
+    CHECK (Property_Type IN ('Commercial', 'Residential')),
+  Comm_OfficeAreas int NOT NULL,
+  Comm_PropertyUsage varchar(100) NOT NULL
+)
+GO
+
+CREATE TABLE dbo.Viewing(
+  View_ID INT NOT NULL
+    CONSTRAINT PK_Viewing
+    PRIMARY KEY,
+  View_Date datetime,
+  View_Time datetime, 
+  View_Viewers int,
+  Emp_Num INT NOT NULL
+    CONSTRAINT FK1_Viewing_to_Agent
+    FOREIGN KEY REFERENCES dbo.Agent(Emp_Num),
+  Property_ID INT NOT NULL
+    CONSTRAINT FK2_Viewing_to_Property
+    FOREIGN KEY REFERENCES dbo.Property(Property_ID),
+  Ag_Cert varchar(10) NOT NULL
+    CONSTRAINT FK3_Viewing_to_Agent
+    FOREIGN KEY REFERENCES dbo.Agent(Ag_Cert)
+	CONSTRAINT CK_Viewing_Ag_Cert
+    CHECK (Ag_Cert IN ('Commercial', 'Residential')),
+  Property_Type varchar(15) NOT NULL
+    CONSTRAINT FK4_Viewing_to_Property
+    FOREIGN KEY REFERENCES dbo.Property(Property_Type)
+    CONSTRAINT CK_Viewing_Property_Type
+    CHECK (Property_Type IN ('Commercial', 'Residential')),
+  CONSTRAINT CK_Inspector_Cert_Property_Type
+	CHECK (NOT(Property_Type = 'Commercial' AND Ag_Cert <> 'Commercial'))
+)
+GO
+
+CREATE TABLE dbo.Inspection(
+  Inspection_ID INT NOT NULL
+    CONSTRAINT PK_Inspection
+    PRIMARY KEY,
+  Inspection_Date datetime,
+  Inspection_Time datetime, 
+  Inspection_Observ varchar(300),
+  Emp_Num INT NOT NULL
+    CONSTRAINT FK1_Inspection_to_Inspector
+    FOREIGN KEY REFERENCES dbo.Inspector(Emp_Num),
+  Property_ID INT NOT NULL
+    CONSTRAINT FK2_Inspection_to_Property
+    FOREIGN KEY REFERENCES dbo.Property(Property_ID),
+  Inspector_Cert varchar(10) NOT NULL
+    CONSTRAINT FK3_Inspection_to_Inspector
+    FOREIGN KEY REFERENCES dbo.Inspector(Inspector_Cert)
+    CONSTRAINT CK_Inspection_Insp_Cert
+    CHECK (Inspector_Cert IN ('IPENZ', 'NZIBI')),
+  Property_Type varchar(15) NOT NULL
+    CONSTRAINT FK4_Inspection_to_Property
+    FOREIGN KEY REFERENCES dbo.Property(Property_Type)
+    CONSTRAINT CK_Inspection_Property_Type
+    CHECK (Property_Type IN ('Commercial', 'Residential')),
+  CONSTRAINT CK_Inspector_Cert_Property_Type
+	CHECK (NOT(Property_Type = 'Commercial' AND Inspector_Cert <> 'IPENZ'))
+)
+GO
+
+
+/* -----------------------------------DML------------------------------------------ */
+-- Populating tables
+INSERT INTO dbo.Employee (Emp_Num, Emp_Type, Emp_Name, Emp_Address, Emp_StartDate)
+VALUES (1, 'Agent', 'John Smith', '123 End Street', '2014-04-12'),
+	   (2, 'Inspector', 'Jim Bob', '456 Main Road', '2013-11-09'),
+	   (3, 'Agent', 'Mary Tale', '789 Sunshine Avenue', '2014-03-25');
+	   (4, 'Inspector', 'Sam Long', '63 Red Grove', '2016-07-21');
+           (5, 'Inspector', 'Timothy Wilkins', '49 Star Crescent', '2016-05-14'); 
+           (6, 'Agent', 'Charlie Seed', '27 Apple Street', '2015-03-28');
+           (7, 'Inspector', 'Matthew Ham', '13 Ghost Street', '2015-11-13');
+           (8, 'Inspector', 'Susan Reed', '28 Sample Road', '2014-08-21');
+           (9, 'Agent', 'Scarlet Pole', '688 Moon Avenue', '2016-06-12');
+           (10, 'Agent', 'Sarah Seed', '264 Read Crescent', '2015-03-17');
+
+INSERT INTO dbo.Agent (Emp_Num, Emp_Type, Ag_Cert, Ag_Affiliation)
+VALUES (1, 'Agent', 'Commercial', NULL),
+           (2, 'Agent', 'Commercial', NULL);
+	   (3, 'Agent', 'Residential', NULL);
+           (6, 'Agent', 'Residential', NULL);
+
+/*       Invalid tests
+           (7, 'Inspector', 'Residential', NULL);
+           (9, 'Agent', 'Testing', NULL);
+*/
+
+INSERT INTO dbo.Inspector(Emp_Num, Emp_Type, Inspector_Cert, Inspector_MembNumber)
+VALUES (2, 'Inspector', 'IPENZ', 34785);
+       	   (4, 'Inspector', 'IPENZ', 97516);
+           (5, 'Inspector', 'NZIBI', 54892);
+
+/*       Invalid tests
+           (8, 'Inspector', 'Testing', 76985);
+           (10, 'Agent', 'IPENZ', 68754);
+*/
+
+INSERT INTO dbo.Viewing (View_ID, View_Date, View_Time, View_Viewers, Emp_Num, Property_ID, Ag_Cert, Property_Type)
+VALUES (40, '2016-02-12', '20:23:54', 4, 6, 20, 'Residential', 'Residential');
+       	   (41, '2017-05-12', '18:37:54', 2, 1, 22, 'Commercial', 'Commercial');
+
+/*       Invalid tests
+           (42, '2018-03-14', '18:46:15', 10, 3, 24, 'Residential', 'Commercial');
+           (43, '2017-04-09', '17:16:35', 8, 2, 25, 'Commercial, 'Residential');
+*/
+
+INSERT INTO dbo.Inspection (Inspection_ID, Inspection_Date, Inspection_Time, Inspection_Observ, Emp_Num, Property_ID, Inspector_Cert, Property_Type)
+VALUES (30, '2017-11-21', '18:45:24', 'There are a few cracks in the wall.', 2, 21, 'IPENZ', 'Commercial');
+       	   (31, '2015-05-17', '17:35:28', 'Carpet needs cleaning.', 5, 23, 'NZIBI', 'Residential');
+
+/*       Invalid tests
+           (32, '2016-12-10', '16:42:32', 'Leaking pipes.', 4, 26, 'IPENZ', 'Residential');
+*/
+
+INSERT INTO dbo.Property (Property_ID, Property_Type, Property_VenName, Property_Address, Property_Price, Property_Age, Property_Condition, Property_FloorSize)
+VALUES (20, 'Residential', NULL, '47 Albatross Close', 300000, 12, 'Good', '25m'),
+	   (21, 'Commercial', NULL, '23 Observatory Place', 525000, 5, 'Excellent', '38m');
+	   (22, 'Commercial', NULL, '73 Gold Street', 250000, 8, 'Good', '38m');
+	   (23, 'Residential', NULL, '18 Mango Place', 400000, 10, 'Excellent', '27m');
+           (24, 'Commercial', NULL, '36 Shoe Street', 270000, 3, 'Good', '22m');
+           (25, 'Residential', NULL, '85 Semple Street', 170000, 11, 'Excellent', '15m');
+           (26, 'Residential', NULL, '64 Smart Avenue', 150000, 23, 'Poor', '23m');
+
+/*       Invalid tests
+           (27, 'Testing', NULL, '522 Flower Valley', 180000, 30, 'Good', '50m');
+           (28, 'Residential', '836 Card Place', 17000, 20, 'Excellent', '28m');
+           (29, 'Commercial', '98 Sheet Grove', 650000, 135, 'Excellent', '68m');
+           (30, 'Residential', '763 Chair Crescent', 80, 'Testing', '35m');
+*/
+
+INSERT INTO dbo.Residential (Property_ID, Residential_Bedrooms, Residential_Bathrooms, Property_Type)
+VALUES (20, 2, 1, ''Residential');
+           (23, 2, 2, 'Residential');
+
+/*       Invalid tests
+           (24, 2, 3, 'Commercial');
+*/
+
+INSERT INTO dbo.Commercial (Property_ID, Comm_OfficeAreas, Comm_PropertyUsage, Property_Type)
+VALUES (21, 2, 'Clothing Shop', 'Commercial');
+       (22, 1, 'Hardware Shop', 'Commercial');
+
+/*       Invalid tests
+           (25, 3, 'Op-Shop', 'Residential');
+*/
